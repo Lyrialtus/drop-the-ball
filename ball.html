@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Drop the ball!</title>
+  <style>
+    html,
+    body {
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: #efefef;
+      font-family: Helvetica, sans-serif;
+    }
+
+    main {
+      height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    #start {
+      position: absolute;
+      margin: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <canvas id="canvas"></canvas>
+    <button id="start" type="button" onclick="init()">Drop</button>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    const context = canvas.getContext("2d");
+
+    // More or less realistic...
+    const acceleration = 9.8;
+    const pixelsPerMeter = 4000;
+    const timeInterval = 1 / 60;
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 10,
+      vx: 0,
+      vy: 0,
+      radius: canvas.height / 20,
+      draw(alpha = 1) {
+        context.fillStyle = `rgba(239, 239, 239, ${alpha})`;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        const gradient = context.createRadialGradient(
+          this.x - this.radius / 3,
+          this.y - this.radius / 3,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+        gradient.addColorStop(0, '#99ddff');
+        gradient.addColorStop(1, '#0044bb');
+        context.fillStyle = gradient;
+
+        context.beginPath();
+        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        context.closePath();
+        context.fill();
+        context.strokeStyle = '#99ddff';
+        context.stroke();
+      }
+    };
+
+    let frame;
+
+    function init() {
+      document.getElementById("start").textContent = 'Again';
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 10;
+        ball.vx = 0;
+        ball.vy = 0;
+      }
+      frame = window.requestAnimationFrame(drawFrame);
+    }
+
+    function drawFrame() {
+      const y0 = ball.y;
+      const vx0 = ball.vx;
+      const vy0 = ball.vy;
+      ball.x += ball.vx;
+      // Two core magic formulae
+      ball.vy += acceleration * timeInterval;
+      ball.y += 0.5 * (vy0 + ball.vy) * timeInterval * pixelsPerMeter;
+
+      if (ball.y + ball.radius > canvas.height) {
+        ball.y = canvas.height - ball.radius;
+        // Reversed velocity with random decay
+        ball.vy = -vy0 * (1 - 0.3 * Math.random());
+        // Random horizontal drift
+        ball.vx = vx0 + (0.5 - Math.random());
+      }
+
+      if (ball.y === y0) {
+        ball.draw();
+        window.cancelAnimationFrame(frame);
+        return;
+      }
+
+      ball.draw(0.8);
+      frame = window.requestAnimationFrame(drawFrame);
+    }
+
+    // Additional flexibility
+    window.addEventListener("resize", () => {
+      canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 10;
+      ball.radius = canvas.height / 20;
+      ball.draw();
+    });
+
+    ball.draw();
+  </script>
+</body>
+
+</html>
